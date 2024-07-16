@@ -1,27 +1,27 @@
-import sys
-import os
-import time
-from kafka import KafkaConsumer
+import pika, sys, os, time
 from send import email
 
+
 def main():
-    # Initialize Kafka consumer
-    consumer = KafkaConsumer(
-        os.environ.get("MP3_QUEUE"),
-        bootstrap_servers='kafka:9092',
-        auto_offset_reset='earliest',
-        enable_auto_commit=False,  # Disable auto commit to manually handle message acknowledgements
-        value_deserializer=lambda v: v.decode('utf-8')
+    # rabbitmq connection
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host="rabbitmq"))
+    channel = connection.channel()
+
+    def callback(ch, method, properties, body):
+        err = email.notification(body)
+        if err:
+            ch.basic_nack(delivery_tag=method.delivery_tag)
+        else:
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+
+    channel.basic_consume(
+        queue=os.environ.get("MP3_QUEUE"), on_message_callback=callback
     )
 
     print("Waiting for messages. To exit press CTRL+C")
 
-    for message in consumer:
-        err = email.notification(message.value)
-        if err:
-            consumer.seek(message.partition, message.offset)  # Manually seek to the message offset
-        else:
-            consumer.commit()  # Commit the message offset
+    channel.start_consuming()
+
 
 if __name__ == "__main__":
     try:
