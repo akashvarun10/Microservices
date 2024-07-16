@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: akashvarunp/microservice-gatweay:4 
+          image: akashvarunp/microservice-gateway-service:1
           envFrom:
             - configMapRef:
                 name: gateway-configmap

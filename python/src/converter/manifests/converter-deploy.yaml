@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: converter
-          image: akashvarunp/microservice-converter:2
+          image: akashvarunp/microservice-convert-service:1
           envFrom:
             - configMapRef:
                 name: converter-configmap

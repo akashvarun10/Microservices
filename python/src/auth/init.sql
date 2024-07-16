@@ -18,3 +18,4 @@ INSERT INTO user (email, password) VALUES ('akashvarunp@gmail.com', 'Admin123');
 
 
 
+

@@ -20,9 +20,9 @@ spec:
     spec:
       containers:
         - name: auth
-          image: akashvarunp/microservice-auth:6
+          image: akashvarunp/microservice-authentication:1
           ports:
-            - containerPort: 5100
+            - containerPort: 5000
           envFrom:
             - configMapRef:
                 name: auth-configmap

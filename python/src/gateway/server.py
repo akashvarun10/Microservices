@@ -5,11 +5,12 @@ from auth import validate
 from auth_svc import access
 from storage import util
 from bson.objectid import ObjectId
+import sys
+import logging
 
 server = Flask(__name__)
 
 mongo_video = PyMongo(server, uri="mongodb://host.minikube.internal:27017/videos")
-
 mongo_mp3 = PyMongo(server, uri="mongodb://host.minikube.internal:27017/mp3s")
 
 fs_videos = gridfs.GridFS(mongo_video.db)
@@ -18,9 +19,16 @@ fs_mp3s = gridfs.GridFS(mongo_mp3.db)
 connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
 channel = connection.channel()
 
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+server.logger.addHandler(handler)
+server.logger.setLevel(logging.DEBUG)
+
 
 @server.route("/login", methods=["POST"])
 def login():
+    server.logger.debug("Within main login()")
     token, err = access.login(request)
 
     if not err:
@@ -69,8 +77,10 @@ def download():
             return "fid is required", 400
 
         try:
+            # This returns the actual mp3 file.
             out = fs_mp3s.get(ObjectId(fid_string))
             return send_file(out, download_name=f"{fid_string}.mp3")
+
         except Exception as err:
             print(err)
             return "internal server error", 500
@@ -80,3 +90,9 @@ def download():
 
 if __name__ == "__main__":
     server.run(host="0.0.0.0", port=8080)
+
+
+
+
+
+
