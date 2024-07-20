@@ -37,28 +37,63 @@ def login():
         return err
 
 
+# @server.route("/upload", methods=["POST"])
+# def upload():
+#     access, err = validate.token(request)
+
+#     if err:
+#         return err
+
+#     access = json.loads(access)
+
+#     if access["admin"]:
+#         if len(request.files) > 1 or len(request.files) < 1:
+#             return "exactly 1 file required", 400
+
+#         for _, f in request.files.items():
+#             err = util.upload(f, fs_videos, channel, access)
+
+#             if err:
+#                 return err
+
+#         return "success!", 200
+#     else:
+#         return "not authorized", 401
+
 @server.route("/upload", methods=["POST"])
 def upload():
-    access, err = validate.token(request)
+    print("upload request")
 
+    # Establish a new RabbitMQ connection and channel
+    connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
+    channel = connection.channel()
+
+    # Validate token
+    access, err = validate.token(request)
     if err:
+        print("error in validate token")
+        connection.close()
         return err
 
     access = json.loads(access)
 
-    if access["admin"]:
-        if len(request.files) > 1 or len(request.files) < 1:
+    if access['admin']:
+        if len(request.files) != 1:
+            connection.close()
             return "exactly 1 file required", 400
 
         for _, f in request.files.items():
             err = util.upload(f, fs_videos, channel, access)
-
             if err:
+                connection.close()
                 return err
 
-        return "success!", 200
-    else:
-        return "not authorized", 401
+        connection.close()
+        return "success", 200
+
+    connection.close()
+    return "not authorized", 401
+
 
 
 @server.route("/download", methods=["GET"])
